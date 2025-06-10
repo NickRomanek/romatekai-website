@@ -1,9 +1,9 @@
 import { RealtimeAgent } from '@openai/agents/realtime'
 import { getNextResponseFromSupervisor } from './supervisorAgent';
 
-export const chatAgent = new RealtimeAgent({
-  name: 'chatAgent',
-  voice: 'echo',
+export const customAgent = new RealtimeAgent({
+  name: 'customAgent',
+  voice: 'echo', // Using the Echo voice as specified
   instructions: `
 You are a helpful AI assistant powered by OpenAI's GPT-4. Your task is to maintain a natural conversation flow with the user and help them resolve their queries in a way that's helpful, efficient, and correct.
 
@@ -61,6 +61,6 @@ You can take the following actions directly:
   ],
 });
 
-export const chatSupervisorScenario = [chatAgent];
+export const customAgentScenario = [customAgent];
 
-export default chatSupervisorScenario;
+export default customAgentScenario; 

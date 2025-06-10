@@ -60,16 +60,20 @@ function BottomToolbar({
 
   return (
     <div className="p-4 flex flex-row items-center justify-center gap-x-8">
-      <button
+      {/* Comment out or conditionally render the microphone/talk button so it is hidden for now.
+      To re-enable, uncomment this section. */}
+      {/* <button
         onClick={onToggleConnection}
         className={getConnectionButtonClasses()}
         disabled={isConnecting}
       >
         {getConnectionButtonLabel()}
-      </button>
+      </button> */}
 
       <div className="flex flex-row items-center gap-2">
-        <input
+        {/* Comment out or conditionally render the microphone/talk button so it is hidden for now.
+        To re-enable, uncomment this section. */}
+        {/* <input
           id="push-to-talk"
           type="checkbox"
           checked={isPTTActive}
@@ -96,51 +100,7 @@ function BottomToolbar({
           }
         >
           Talk
-        </button>
-      </div>
-
-      <div className="flex flex-row items-center gap-1">
-        <input
-          id="audio-playback"
-          type="checkbox"
-          checked={isAudioPlaybackEnabled}
-          onChange={(e) => setIsAudioPlaybackEnabled(e.target.checked)}
-          disabled={!isConnected}
-          className="w-4 h-4"
-        />
-        <label
-          htmlFor="audio-playback"
-          className="flex items-center cursor-pointer"
-        >
-          Audio playback
-        </label>
-      </div>
-
-      <div className="flex flex-row items-center gap-2">
-        <input
-          id="logs"
-          type="checkbox"
-          checked={isEventsPaneExpanded}
-          onChange={(e) => setIsEventsPaneExpanded(e.target.checked)}
-          className="w-4 h-4"
-        />
-        <label htmlFor="logs" className="flex items-center cursor-pointer">
-          Logs
-        </label>
-      </div>
-
-      <div className="flex flex-row items-center gap-2">
-        <div>Codec:</div>
-        <select
-          id="codec-select"
-          value={codec}
-          onChange={handleCodecChange}
-          className="border border-gray-300 rounded-md px-2 py-1 focus:outline-none cursor-pointer"
-        >
-          <option value="opus">Opus (48 kHz)</option>
-          <option value="pcmu">PCMU (8 kHz)</option>
-          <option value="pcma">PCMA (8 kHz)</option>
-        </select>
+        </button> */}
       </div>
     </div>
   );

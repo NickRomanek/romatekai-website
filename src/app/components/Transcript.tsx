@@ -14,6 +14,8 @@ export interface TranscriptProps {
   onSendMessage: () => void;
   canSend: boolean;
   downloadRecording: () => void;
+  sessionStatus: string;
+  onConnectClick: () => void;
 }
 
 function Transcript({
@@ -22,12 +24,15 @@ function Transcript({
   onSendMessage,
   canSend,
   downloadRecording,
+  sessionStatus,
+  onConnectClick,
 }: TranscriptProps) {
   const { transcriptItems, toggleTranscriptItemExpand } = useTranscript();
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   const [prevLogs, setPrevLogs] = useState<TranscriptItem[]>([]);
   const [justCopied, setJustCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [expandedPost, setExpandedPost] = useState<any | null>(null);
 
   function scrollToBottom() {
     if (transcriptRef.current) {
@@ -75,22 +80,6 @@ function Transcript({
       <div className="flex flex-col flex-1 min-h-0">
         <div className="flex items-center justify-between px-6 py-3 sticky top-0 z-10 text-base border-b bg-white rounded-t-xl">
           <span className="font-semibold">Transcript</span>
-          <div className="flex gap-x-2">
-            <button
-              onClick={handleCopyTranscript}
-              className="w-24 text-sm px-3 py-1 rounded-md bg-gray-200 hover:bg-gray-300 flex items-center justify-center gap-x-1"
-            >
-              <ClipboardCopyIcon />
-              {justCopied ? "Copied!" : "Copy"}
-            </button>
-            <button
-              onClick={downloadRecording}
-              className="w-40 text-sm px-3 py-1 rounded-md bg-gray-200 hover:bg-gray-300 flex items-center justify-center gap-x-1"
-            >
-              <DownloadIcon />
-              <span>Download Audio</span>
-            </button>
-          </div>
         </div>
 
         {/* Transcript Content */}
@@ -210,28 +199,67 @@ function Transcript({
         </div>
       </div>
 
-      <div className="p-4 flex items-center gap-x-2 flex-shrink-0 border-t border-gray-200">
-        <input
-          ref={inputRef}
-          type="text"
-          value={userText}
-          onChange={(e) => setUserText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && canSend) {
-              onSendMessage();
-            }
-          }}
-          className="flex-1 px-4 py-2 focus:outline-none"
-          placeholder="Type a message..."
-        />
-        <button
-          onClick={onSendMessage}
-          disabled={!canSend || !userText.trim()}
-          className="bg-gray-900 text-white rounded-full px-2 py-2 disabled:opacity-50"
-        >
-          <Image src="arrow.svg" alt="Send" width={24} height={24} />
-        </button>
+      <div className="p-4 border-t flex flex-col items-center border-2 border-black rounded-b-xl">
+        {sessionStatus !== 'CONNECTED' ? (
+          <button
+            onClick={sessionStatus === 'CONNECTING' ? undefined : onConnectClick}
+            disabled={sessionStatus === 'CONNECTING'}
+            className={`px-6 py-2 rounded-lg font-semibold mb-2 flex items-center justify-center transition-colors
+              ${sessionStatus === 'CONNECTING'
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-black text-white hover:bg-blue-700 active:bg-blue-800'}`}
+          >
+            {sessionStatus === 'CONNECTING' ? (
+              <>
+                <svg className="animate-spin h-5 w-5 mr-2 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                Connecting...
+              </>
+            ) : (
+              'Connect'
+            )}
+          </button>
+        ) : (
+          <>
+            <input
+              ref={inputRef}
+              type="text"
+              value={userText}
+              onChange={(e) => setUserText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && canSend) {
+                  onSendMessage();
+                }
+              }}
+              className="flex-1 px-4 py-2 focus:outline-none"
+              placeholder="Type a message..."
+            />
+            <button
+              onClick={onSendMessage}
+              disabled={!canSend || !userText.trim()}
+              className="bg-gray-900 text-white rounded-full px-2 py-2 disabled:opacity-50"
+            >
+              <Image src="arrow.svg" alt="Send" width={24} height={24} />
+            </button>
+          </>
+        )}
       </div>
+
+      {expandedPost && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-8 w-4/5 max-w-4xl relative">
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+              onClick={() => setExpandedPost(null)}
+            >
+              ×
+            </button>
+            {/* ...full post content... */}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

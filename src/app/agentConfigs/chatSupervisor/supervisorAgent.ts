@@ -7,6 +7,44 @@ import {
   exampleStoreLocations,
 } from './sampleData';
 
+const companyInfo = `RomaTek Fast Facts
+------------------
+• Founded: 2025 • HQ: Florida, USA • Founder: Nick Romanek
+• Mission: Help businesses turn AI ideas into measurable results—fast.
+
+Core Services
+-------------
+• AI Readiness Audit (1‑week) – quick assessment of workflows, data sources & "easy‑win" automation spots
+• MS 365/Teams Automations – build Power Automate flows (user onboarding, ticket triage, report generation)
+• Azure OpenAI Chatbot MVP – branded FAQ or internal knowledge bot deployed in a secure Azure environment
+
+Unique Value
+------------
+• 70% average reduction in manual admin time for pilot clients.
+• Certified in Azure AI‑102 and Microsoft Solutions Architecture.
+• Proven track record in automotive diagnostics, healthcare, and legal SMBs.
+
+FAQs
+----
+Q: What makes RomaTek different from other consultancies?  
+A: We deliver quick‑turn pilots (≤30 days) with transparent pricing, then scale only what works.
+
+Q: Do you build custom LLM apps?  
+A: Yes. We specialize in GPT‑4o integrations (chat, embeddings, tool‑calling) and maintain strict data‑privacy controls.
+
+Q: How do I start?  
+A: Book a free 30‑minute discovery call at romatekai.com/consult, or email hello@romatekai.com.`;
+
+const supervisorInstructions = `
+You are RomaTek's supervisor AI assistant. Use the company information below to answer all questions as accurately and helpfully as possible.
+
+- If the user asks about RomaTek's services, ALWAYS answer using the 'Core Services' section above.
+- If you don't know something, be honest about it.
+- Keep responses concise, professional, and friendly.
+- Reference specific details from the company information when relevant.
+- Do not answer questions unrelated to RomaTek or its services; politely redirect the user.
+`;
+
 export const supervisorAgentInstructions = `You are an expert customer service supervisor agent, tasked with providing real-time guidance to a more junior agent that's chatting directly with the customer. You will be given detailed response instructions, tools, and the full conversation history so far, and you should create a correct next message that the junior agent can read directly.
 
 # Instructions
@@ -255,65 +293,45 @@ async function handleToolCalls(
 
 export const getNextResponseFromSupervisor = tool({
   name: 'getNextResponseFromSupervisor',
-  description:
-    'Determines the next response whenever the agent faces a non-trivial decision, produced by a highly intelligent supervisor agent. Returns a message describing what to do next.',
+  description: 'Get a response from the supervisor agent with access to company information',
   parameters: {
     type: 'object',
     properties: {
       relevantContextFromLastUserMessage: {
         type: 'string',
-        description:
-          'Key information from the user described in their most recent message. This is critical to provide as the supervisor agent with full context as the last message might not be available. Okay to omit if the user message didn\'t add any new information.',
-      },
+        description: 'Context from the user\'s last message to help the supervisor provide a relevant response'
+      }
     },
     required: ['relevantContextFromLastUserMessage'],
-    additionalProperties: false,
+    additionalProperties: false
   },
-  execute: async (input, details) => {
+  execute: async (input) => {
     const { relevantContextFromLastUserMessage } = input as {
       relevantContextFromLastUserMessage: string;
     };
 
-    const addBreadcrumb = (details?.context as any)?.addTranscriptBreadcrumb as
-      | ((title: string, data?: any) => void)
-      | undefined;
-
-    const history: RealtimeItem[] = (details?.context as any)?.history ?? [];
-    const filteredLogs = history.filter((log) => log.type === 'message');
-
-    const body: any = {
-      model: 'gpt-4.1',
-      input: [
-        {
-          type: 'message',
-          role: 'system',
-          content: supervisorAgentInstructions,
+    try {
+      const response = await fetch('/api/supervisor', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          type: 'message',
-          role: 'user',
-          content: `==== Conversation History ====
-          ${JSON.stringify(filteredLogs, null, 2)}
-          
-          ==== Relevant Context From Last User Message ===
-          ${relevantContextFromLastUserMessage}
-          `,
-        },
-      ],
-      tools: supervisorAgentTools,
-    };
+        body: JSON.stringify({
+          relevantContextFromLastUserMessage,
+          companyInfo,
+          supervisorInstructions
+        }),
+      });
 
-    let response = await fetchResponsesMessage(body);
-    if (response.error) {
-      return { error: 'Something went wrong.' };
+      if (!response.ok) {
+        throw new Error('Failed to get response from supervisor');
+      }
+
+      const data = await response.json();
+      return { nextResponse: data.nextResponse };
+    } catch (error) {
+      console.error('Error calling supervisor API:', error);
+      return { error: 'Failed to get response from supervisor' };
     }
-
-    const finalText = await handleToolCalls(body, response, addBreadcrumb);
-    if ((finalText as any)?.error) {
-      return { error: 'Something went wrong.' };
-    }
-
-    return { nextResponse: finalText as string };
-  },
+  }
 });
-  

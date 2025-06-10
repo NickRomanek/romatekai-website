@@ -10,6 +10,7 @@ import Image from "next/image";
 import Transcript from "./components/Transcript";
 import Events from "./components/Events";
 import BottomToolbar from "./components/BottomToolbar";
+import ThreeSphere from './components/ThreeSphere';
 
 // Types
 import { SessionStatus, TranscriptItem } from "@/app/types";
@@ -60,11 +61,6 @@ function App() {
   }, [transcriptItems]);
   const { logClientEvent, logServerEvent, logHistoryItem } = useEvent();
 
-  const [selectedAgentName, setSelectedAgentName] = useState<string>("");
-  const [selectedAgentConfigSet, setSelectedAgentConfigSet] = useState<
-    RealtimeAgent[] | null
-  >(null);
-
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
   const sdkAudioElement = React.useMemo(() => {
@@ -93,15 +89,7 @@ function App() {
   const [userText, setUserText] = useState<string>("");
   const [isPTTActive, setIsPTTActive] = useState<boolean>(false);
   const [isPTTUserSpeaking, setIsPTTUserSpeaking] = useState<boolean>(false);
-  const [isAudioPlaybackEnabled, setIsAudioPlaybackEnabled] = useState<boolean>(
-    () => {
-      if (typeof window === 'undefined') return true;
-      const stored = localStorage.getItem('audioPlaybackEnabled');
-      return stored ? stored === 'true' : true;
-    },
-  );
-
-
+  const [isAudioPlaybackEnabled, setIsAudioPlaybackEnabled] = useState<boolean>(false);
 
   // Initialize the recording hook.
   const { startRecording, stopRecording, downloadRecording } =
@@ -121,51 +109,9 @@ function App() {
   };
 
 
-  useEffect(() => {
-    let finalAgentConfig = searchParams.get("agentConfig");
-    if (!finalAgentConfig || !allAgentSets[finalAgentConfig]) {
-      finalAgentConfig = defaultAgentSetKey;
-      const url = new URL(window.location.toString());
-      url.searchParams.set("agentConfig", finalAgentConfig);
-      window.location.replace(url.toString());
-      return;
-    }
-
-    const agents = allAgentSets[finalAgentConfig];
-    const agentKeyToUse = agents[0]?.name || "";
-
-    setSelectedAgentName(agentKeyToUse);
-    setSelectedAgentConfigSet(agents);
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (selectedAgentName && sessionStatus === "DISCONNECTED") {
-      connectToRealtime();
-    }
-  }, [selectedAgentName]);
-
-  useEffect(() => {
-    if (
-      sessionStatus === "CONNECTED" &&
-      selectedAgentConfigSet &&
-      selectedAgentName
-    ) {
-      const currentAgent = selectedAgentConfigSet.find(
-        (a) => a.name === selectedAgentName
-      );
-      addTranscriptBreadcrumb(`Agent: ${selectedAgentName}`, currentAgent);
-      updateSession(true);
-    }
-  }, [selectedAgentConfigSet, selectedAgentName, sessionStatus]);
-
-  useEffect(() => {
-    if (sessionStatus === "CONNECTED") {
-      console.log(
-        `updatingSession, isPTTACtive=${isPTTActive} sessionStatus=${sessionStatus}`
-      );
-      updateSession();
-    }
-  }, [isPTTActive]);
+  const selectedAgentConfigSet = chatSupervisorScenario;
+  const selectedAgentName = 'chatAgent';
+  const agentSetKey = 'chatSupervisor';
 
   const fetchEphemeralKey = async (): Promise<string | null> => {
     logClientEvent({ url: "/session" }, "fetch_session_token_request");
@@ -184,24 +130,18 @@ function App() {
   };
 
   const connectToRealtime = async () => {
-    const agentSetKey = searchParams.get("agentConfig") || "default";
-    if (sdkScenarioMap[agentSetKey]) {
-      // Use new SDK path
       if (sessionStatus !== "DISCONNECTED") return;
       setSessionStatus("CONNECTING");
-
       try {
         const EPHEMERAL_KEY = await fetchEphemeralKey();
         if (!EPHEMERAL_KEY) return;
-
-        // Ensure the selectedAgentName is first so that it becomes the root
-        const reorderedAgents = [...sdkScenarioMap[agentSetKey]];
-        const idx = reorderedAgents.findIndex((a) => a.name === selectedAgentName);
+      const reorderedAgents = [...chatSupervisorScenario];
+      // chatAgent is already first, but ensure it
+      const idx = reorderedAgents.findIndex((a) => a.name === 'chatAgent');
         if (idx > 0) {
           const [agent] = reorderedAgents.splice(idx, 1);
           reorderedAgents.unshift(agent);
         }
-
         const client = new RealtimeClient({
           getEphemeralKey: async () => EPHEMERAL_KEY,
           initialAgents: reorderedAgents,
@@ -210,7 +150,6 @@ function App() {
             addTranscriptBreadcrumb,
           },
         } as any);
-
         sdkClientRef.current = client;
 
         client.on("connection_change", (status) => {
@@ -474,7 +413,7 @@ function App() {
                   (a) => a.name.toLowerCase() === newAgentKey.toLowerCase(),
                 );
                 if (candidate && candidate.name !== selectedAgentName) {
-                  setSelectedAgentName(candidate.name);
+                // setSelectedAgentName(candidate.name);
                 }
               }
             }
@@ -504,7 +443,7 @@ function App() {
                     (a) => a.name.toLowerCase() === newAgentKey.toLowerCase(),
                   );
                   if (candidate && candidate.name !== selectedAgentName) {
-                    setSelectedAgentName(candidate.name);
+                  // setSelectedAgentName(candidate.name);
                   }
                 }
               }
@@ -562,7 +501,6 @@ function App() {
         setSessionStatus("DISCONNECTED");
       }
       return;
-    }
   };
 
   const disconnectFromRealtime = () => {
@@ -692,25 +630,6 @@ function App() {
     }
   };
 
-  const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newAgentConfig = e.target.value;
-    const url = new URL(window.location.toString());
-    url.searchParams.set("agentConfig", newAgentConfig);
-    window.location.replace(url.toString());
-  };
-
-  const handleSelectedAgentChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const newAgentName = e.target.value;
-    // Reconnect session with the newly selected agent as root so that tool
-    // execution works correctly.
-    disconnectFromRealtime();
-    setSelectedAgentName(newAgentName);
-    // connectToRealtime will be triggered by effect watching selectedAgentName
-  };
-
-  // Instead of using setCodec, we update the URL and refresh the page when codec changes
   const handleCodecChange = (newCodec: string) => {
     const url = new URL(window.location.toString());
     url.searchParams.set("codec", newCodec);
@@ -799,92 +718,329 @@ function App() {
     };
   }, [sessionStatus]);
 
-  const agentSetKey = searchParams.get("agentConfig") || "default";
+  useEffect(() => {
+    if (sessionStatus === 'CONNECTED' && transcriptItems.length === 0) {
+      sendSimulatedUserMessage('hi');
+    }
+  }, [sessionStatus, transcriptItems]);
+
+  // Add state for logs panel visibility
+  const [showLogs, setShowLogs] = useState<boolean>(false);
+
+  // Add state for chat panel visibility
+  const [showChat, setShowChat] = useState<boolean>(false);
+
+  // Contact form state
+  const [contactForm, setContactForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    company: '',
+    service: '',
+    message: '',
+    honeypot: '' // Anti-spam honeypot field
+  });
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
+  const [contactMessage, setContactMessage] = useState('');
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingContact(true);
+    setContactMessage('');
+
+    // Check honeypot - if filled, it's likely a bot
+    if (contactForm.honeypot) {
+      setContactMessage('Error: Spam detected. Please try again.');
+      setIsSubmittingContact(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contactForm),
+      });
+
+      if (response.ok) {
+        setContactMessage('Thank you! Your message has been sent successfully. We\'ll get back to you within 24 hours.');
+        setContactForm({
+          firstName: '',
+          lastName: '',
+          email: '',
+          company: '',
+          service: '',
+          message: '',
+          honeypot: ''
+        });
+      } else {
+        const errorData = await response.json();
+        setContactMessage(`Error: ${errorData.error || 'Failed to send message'}`);
+      }
+    } catch (error) {
+      setContactMessage('Error: Something went wrong. Please try again.');
+    } finally {
+      setIsSubmittingContact(false);
+    }
+  };
+
+  const updateContactForm = (field: string, value: string) => {
+    setContactForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const [sphereRotation, setSphereRotation] = useState(0);
+  const [highlightAngle, setHighlightAngle] = useState(0);
+  const animationRef = useRef<number | null>(null);
+  useEffect(() => {
+    let start = Date.now();
+    function animate() {
+      const now = Date.now();
+      const elapsed = (now - start) / 1000;
+      setSphereRotation((360 * elapsed / 30) % 360); // 30s per rotation
+      setHighlightAngle((360 * elapsed / 12) % 360); // 12s for highlight orbit
+      animationRef.current = requestAnimationFrame(animate);
+    }
+    animate();
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, []);
+
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
 
   return (
     <div className="text-base flex flex-col h-screen bg-gray-100 text-gray-800 relative">
-      <div className="p-5 text-lg font-semibold flex justify-between items-center">
-        <div
-          className="flex items-center cursor-pointer"
-          onClick={() => window.location.reload()}
-        >
+      {/* Header/Navbar */}
+      <header className="bg-white shadow sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo/Brand */}
+            <div className="flex items-center">
+              <span className="text-xl font-bold text-blue-700 mr-8 cursor-pointer" onClick={() => window.location.reload()}>
+                RomaTek <span className="text-gray-700">AI Solutions</span>
+              </span>
+              {/* Nav Links */}
+              <nav className="hidden md:flex space-x-6 text-base font-medium">
+                {/* <a href="/about" className="hover:text-blue-600">About</a> */}
+                <a href="/blog" className="hover:text-blue-600">Blog</a>
+                <a href="#contact" className="hover:text-blue-600" onClick={e => { e.preventDefault(); document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}>Contact Us</a>
+              </nav>
+          </div>
+            {/* Sign In Button */}
           <div>
-            <Image
-              src="/openai-logomark.svg"
-              alt="OpenAI Logo"
-              width={20}
-              height={20}
-              className="mr-2"
-            />
-          </div>
-          <div>
-            Realtime API <span className="text-gray-500">Agents</span>
-          </div>
-        </div>
-        <div className="flex items-center">
-          <label className="flex items-center text-base gap-1 mr-2 font-medium">
-            Scenario
-          </label>
-          <div className="relative inline-block">
-            <select
-              value={agentSetKey}
-              onChange={handleAgentChange}
-              className="appearance-none border border-gray-300 rounded-lg text-base px-2 py-1 pr-8 cursor-pointer font-normal focus:outline-none"
-            >
-              {Object.keys(allAgentSets).map((agentKey) => (
-                <option key={agentKey} value={agentKey}>
-                  {agentKey}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-600">
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.44l3.71-3.21a.75.75 0 111.04 1.08l-4.25 3.65a.75.75 0 01-1.04 0L5.21 8.27a.75.75 0 01.02-1.06z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-          </div>
-
-          {agentSetKey && (
-            <div className="flex items-center ml-6">
-              <label className="flex items-center text-base gap-1 mr-2 font-medium">
-                Agent
-              </label>
-              <div className="relative inline-block">
-                <select
-                  value={selectedAgentName}
-                  onChange={handleSelectedAgentChange}
-                  className="appearance-none border border-gray-300 rounded-lg text-base px-2 py-1 pr-8 cursor-pointer font-normal focus:outline-none"
-                >
-                  {selectedAgentConfigSet?.map((agent) => (
-                    <option key={agent.name} value={agent.name}>
-                      {agent.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-gray-600">
-                  <svg
-                    className="h-4 w-4"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.44l3.71-3.21a.75.75 0 111.04 1.08l-4.25 3.65a.75.75 0 01-1.04 0L5.21 8.27a.75.75 0 01.02-1.06z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition mr-2"
+                onClick={() => {
+                  setShowChat((prev) => !prev);
+                  setSessionStatus("DISCONNECTED");
+                }}
+              >
+                Chat with RomaTek AI
+              </button>
                 </div>
               </div>
             </div>
-          )}
+      </header>
+      {/* Hero Section */}
+      <section className="w-full px-4 py-16 text-center bg-gray-200">
+        <h1 className="text-5xl sm:text-6xl font-extrabold text-gray-900 mb-6">
+          Practical AI for{' '}
+          <span className="text-blue-600">Small to Medium<br className="sm:hidden" /> Businesses</span>
+        </h1>
+        <p className="text-xl text-gray-700 max-w-2xl mx-auto mb-12">
+          RomaTek AI empowers small to medium-sized businesses with practical AI and IT solutions. From strategic consulting to custom AI tools, we deliver measurable results—boosting efficiency, cutting costs, and driving growth.
+        </p>
+        {/* Rotating Sphere */}
+        <div className="flex flex-col items-center justify-center mb-10">
+          <ThreeSphere />
+          <div className="flex gap-4 mt-8">
+            <button className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition">Get Started Today</button>
+            <button
+              className="border-2 border-blue-600 text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition"
+              onClick={() => {
+                setShowChat(true);
+                setSessionStatus('DISCONNECTED');
+              }}
+            >
+              Talk to Our AI Assistant
+            </button>
         </div>
       </div>
-
+    </section>
+    {/* AI Consulting Services Section */}
+    <section className="w-full bg-white py-16 px-4">
+      <div className="max-w-6xl mx-auto text-center mb-12">
+        <h2 className="text-3xl sm:text-4xl font-bold mb-4">Our AI Consulting Services</h2>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">From strategy to implementation, we provide comprehensive AI solutions tailored to your business needs.</p>
+      </div>
+      <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Service Card 1 */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-left shadow-sm hover:shadow-md transition">
+          <div className="text-blue-600 text-2xl mb-3">💡</div>
+          <h3 className="font-semibold text-lg mb-2">AI Strategy & Road‑mapping</h3>
+          <p className="text-gray-600 text-sm">Identify quick‑win pilots, craft a 3 to 12‑month roadmap, and model ROI—grounded in Microsoft Azure best practices.</p>
+        </div>
+        {/* Service Card 2 */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-left shadow-sm hover:shadow-md transition">
+          <div className="text-blue-600 text-2xl mb-3">⚙️</div>
+          <h3 className="font-semibold text-lg mb-2">Rapid POC & Custom Implementation</h3>
+          <p className="text-gray-600 text-sm">Spin up production‑ready prototypes in weeks—chatbots, document‑processing pipelines, copilot extensions—then scale on Azure.</p>
+        </div>
+        {/* Service Card 3 */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-left shadow-sm hover:shadow-md transition">
+          <div className="text-blue-600 text-2xl mb-3">🧪</div>
+          <h3 className="font-semibold text-lg mb-2">AI‑Assisted Software Development</h3>
+          <p className="text-gray-600 text-sm">Ship faster using AI‑assisted coding, continuous automated testing, and intelligent CI/CD pipelines—delivering secure, production‑ready code every time</p>
+        </div>
+        {/* Service Card 4 */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-left shadow-sm hover:shadow-md transition">
+          <div className="text-blue-600 text-2xl mb-3">📚</div>
+          <h3 className="font-semibold text-lg mb-2">AI Training & Education</h3>
+          <p className="text-gray-600 text-sm">Empower your team with comprehensive AI training programs and workshops tailored to your industry.</p>
+        </div>
+        {/* Service Card 5 */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-left shadow-sm hover:shadow-md transition">
+          <div className="text-blue-600 text-2xl mb-3">⚖️</div>
+          <h3 className="font-semibold text-lg mb-2">AI Ethics & Compliance</h3>
+          <p className="text-gray-600 text-sm">Ensure responsible AI deployment with ethical frameworks and regulatory compliance guidance.</p>
+        </div>
+        {/* Service Card 6 */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-left shadow-sm hover:shadow-md transition">
+          <div className="text-blue-600 text-2xl mb-3">🔄</div>
+          <h3 className="font-semibold text-lg mb-2">Process Automation</h3>
+          <p className="text-gray-600 text-sm">Streamline onboarding, finance, and support ops with low‑code flows, RPA, and API scripting—cut hours, not corners.</p>
+        </div>
+      </div>
+    </section>
+    {/* Contact Section */}
+    <section id="contact" className="w-full bg-black py-20 px-4">
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-12 items-start justify-between">
+        {/* Left: Contact Info */}
+        <div className="flex-1 text-white mb-10 lg:mb-0">
+          <h2 className="text-3xl font-bold mb-4">Ready to Transform Your Business?</h2>
+          <p className="text-lg text-gray-300 mb-10 max-w-lg">Let's discuss how AI can revolutionize your operations and drive growth. Get in touch for a free consultation.</p>
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold mb-4">Get In Touch</h3>
+            <div className="flex items-start mb-4">
+              <span className="text-blue-400 text-2xl mr-4 mt-1">✉️</span>
+          <div>
+                <span className="font-semibold">Email</span><br />
+                <span className="text-gray-300">hello@romatekai.com</span>
+          </div>
+            </div>
+            <div className="flex items-start mb-6">
+              <span className="text-blue-400 text-2xl mr-4 mt-1">📞</span>
+          <div>
+                <span className="font-semibold">Phone</span><br />
+                <span className="text-gray-300">484.695.0269</span>
+          </div>
+        </div>
+            <div>
+              <span className="font-semibold">Follow Us</span>
+              <div className="flex gap-3 mt-2">
+                <a href="https://x.com/RomaTekAI" className="bg-gray-800 hover:bg-gray-700 p-2 rounded text-white text-xl" aria-label="X.com"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 19c11 0 13-9 13-13v-.6A9.3 9.3 0 0023 3a9.1 9.1 0 01-2.6.7A4.5 4.5 0 0022.4.4a9.1 9.1 0 01-2.9 1.1A4.5 4.5 0 0016.1 0c-2.5 0-4.5 2-4.5 4.5 0 .4 0 .8.1 1.2A12.8 12.8 0 013 1.1a4.5 4.5 0 001.4 6A4.5 4.5 0 012 6.1v.1c0 2.2 1.6 4.1 3.8 4.5a4.5 4.5 0 01-2 .1c.6 1.8 2.3 3.1 4.3 3.1A9.1 9.1 0 012 17.5a12.8 12.8 0 006.9 2" /></svg></a>
+            </div>
+          </div>
+                </div>
+              </div>
+        {/* Right: Contact Form */}
+        <div className="flex-1 max-w-xl w-full bg-gray-900 rounded-xl shadow-lg p-8 text-white ml-auto">
+          <h3 className="text-2xl font-bold mb-6">Start Your AI Journey</h3>
+          
+          {contactMessage && (
+            <div className={`mb-4 p-3 rounded-lg ${contactMessage.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+              {contactMessage}
+            </div>
+          )}
+          
+          <form className="space-y-4" onSubmit={handleContactSubmit}>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-semibold mb-1">First Name *</label>
+                <input type="text" className="w-full rounded-md bg-gray-800 border border-gray-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required value={contactForm.firstName} onChange={(e) => updateContactForm('firstName', e.target.value)} />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-semibold mb-1">Last Name *</label>
+                <input type="text" className="w-full rounded-md bg-gray-800 border border-gray-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required value={contactForm.lastName} onChange={(e) => updateContactForm('lastName', e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">Email Address *</label>
+              <input type="email" className="w-full rounded-md bg-gray-800 border border-gray-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" required value={contactForm.email} onChange={(e) => updateContactForm('email', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">Company</label>
+              <input type="text" className="w-full rounded-md bg-gray-800 border border-gray-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" value={contactForm.company} onChange={(e) => updateContactForm('company', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">Interested Service</label>
+              <select className="w-full rounded-md bg-gray-800 border border-gray-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" value={contactForm.service} onChange={(e) => updateContactForm('service', e.target.value)}>
+                <option value="">Select a service</option>
+                <option>AI Strategy & Road‑mapping</option>
+                <option>Rapid POC & Custom Implementation</option>
+                <option>AI‑Assisted Software Development</option>
+                <option>AI Training & Education</option>
+                <option>AI Ethics & Compliance</option>
+                <option>Process Automation</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-1">Message *</label>
+              <textarea className="w-full rounded-md bg-gray-800 border border-gray-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" rows={4} required value={contactForm.message} onChange={(e) => updateContactForm('message', e.target.value)} placeholder="Tell us about your AI goals and challenges..."></textarea>
+            </div>
+            
+            {/* Honeypot field - hidden from real users */}
+            <div style={{ display: 'none' }}>
+              <label htmlFor="website">Website (leave blank)</label>
+              <input
+                type="text"
+                id="website"
+                name="website"
+                value={contactForm.honeypot}
+                onChange={(e) => updateContactForm('honeypot', e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </div>
+            
+            <button 
+              type="submit" 
+              disabled={isSubmittingContact}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md text-lg mt-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmittingContact ? 'Sending...' : 'Send Message'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+    {/* Main Content */}
       <div className="flex flex-1 gap-2 px-2 overflow-hidden relative">
+      {showChat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Modal background */}
+          <div
+            className="absolute inset-0 bg-black bg-opacity-40"
+            onClick={() => {
+              setShowChat(false);
+              disconnectFromRealtime();
+            }}
+          />
+          {/* Modal content */}
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full h-[90vh] flex flex-col p-4">
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl font-bold z-10"
+              onClick={() => {
+                setShowChat(false);
+                disconnectFromRealtime();
+              }}
+              aria-label="Close chat"
+            >
+              ×
+            </button>
+            <div className="flex-1 flex flex-col min-h-0">
         <Transcript
           userText={userText}
           setUserText={setUserText}
@@ -894,11 +1050,39 @@ function App() {
             sessionStatus === "CONNECTED" &&
                   sdkClientRef.current != null
           }
+                sessionStatus={sessionStatus}
+                onConnectClick={connectToRealtime}
         />
-
-        <Events isExpanded={isEventsPaneExpanded} />
       </div>
-
+          </div>
+        </div>
+      )}
+      {showLogs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Modal background */}
+          <div className="absolute inset-0 bg-black bg-opacity-40" onClick={() => setShowLogs(false)} />
+          {/* Modal content */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full h-[95vh] mx-4 flex flex-col">
+            <button
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl font-bold z-10"
+              onClick={() => setShowLogs(false)}
+              aria-label="Close logs"
+            >
+              ×
+            </button>
+            <div className="flex-1 flex flex-col min-h-0 h-full">
+              <Events
+                isExpanded={true}
+                isAudioPlaybackEnabled={isAudioPlaybackEnabled}
+                setIsAudioPlaybackEnabled={setIsAudioPlaybackEnabled}
+                codec={urlCodec}
+                onCodecChange={handleCodecChange}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
       <BottomToolbar
         sessionStatus={sessionStatus}
         onToggleConnection={onToggleConnection}
