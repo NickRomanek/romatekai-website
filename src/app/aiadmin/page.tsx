@@ -1,9 +1,8 @@
 'use client';
-import { useSession, signIn, signOut } from "next-auth/react";
-import React, { useState, useEffect } from "react";
 
-export default function AiAdminPage() {
-  const { data: session, status } = useSession();
+import { useState, useEffect } from 'react';
+
+export default function AIAdminPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [image, setImage] = useState<File | null>(null);
@@ -53,10 +52,8 @@ export default function AiAdminPage() {
 
   // Fetch posts on component mount
   useEffect(() => {
-    if (session) {
-      fetchPosts();
-    }
-  }, [session]);
+    fetchPosts();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,28 +116,10 @@ export default function AiAdminPage() {
     }
   };
 
-  if (status === "loading") return <div>Loading...</div>;
-  if (!session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <button
-          onClick={() => signIn("google")}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-        >
-          Sign in with Google
-        </button>
-      </div>
-    );
-  }
+  // Just show the admin interface directly for now
 
   return (
     <div className="min-h-screen bg-gray-50 py-16 px-4 relative">
-      <button
-        onClick={() => signOut()}
-        className="absolute top-6 right-6 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition shadow"
-      >
-        Log out
-      </button>
       <div className="max-w-4xl mx-auto text-center">
         <h1 className="text-4xl font-bold mb-6 text-gray-900">AI Admin Dashboard</h1>
         <p className="text-lg text-gray-700 mb-10">

@@ -1,24 +1,24 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import "./lib/envSetup";
 import { usePathname } from "next/navigation";
 import React from "react";
 import ClientHeaderOnlyOnAbout from "./components/ClientHeaderOnlyOnAbout";
-import ClientSessionProvider from "./components/ClientSessionProvider";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Realtime API Agents",
-  description: "A demo app from OpenAI.",
+  title: "RomaTek AI Solutions",
+  description: "Advanced AI Solutions for Modern Businesses",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased">
-        <ClientSessionProvider>
-          <ClientHeaderOnlyOnAbout />
-          {children}
-        </ClientSessionProvider>
+      <body className={inter.className}>
+        <ClientHeaderOnlyOnAbout />
+        {children}
       </body>
     </html>
   );
