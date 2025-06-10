@@ -16,6 +16,8 @@ export interface TranscriptProps {
   downloadRecording: () => void;
   sessionStatus: string;
   onConnectClick: () => void;
+  isAudioPlaybackEnabled: boolean;
+  setIsAudioPlaybackEnabled: (val: boolean) => void;
 }
 
 function Transcript({
@@ -26,6 +28,8 @@ function Transcript({
   downloadRecording,
   sessionStatus,
   onConnectClick,
+  isAudioPlaybackEnabled,
+  setIsAudioPlaybackEnabled,
 }: TranscriptProps) {
   const { transcriptItems, toggleTranscriptItemExpand } = useTranscript();
   const transcriptRef = useRef<HTMLDivElement | null>(null);
@@ -201,48 +205,78 @@ function Transcript({
 
       <div className="p-4 border-t flex flex-col items-center border-2 border-black rounded-b-xl">
         {sessionStatus !== 'CONNECTED' ? (
-          <button
-            onClick={sessionStatus === 'CONNECTING' ? undefined : onConnectClick}
-            disabled={sessionStatus === 'CONNECTING'}
-            className={`px-6 py-2 rounded-lg font-semibold mb-2 flex items-center justify-center transition-colors
-              ${sessionStatus === 'CONNECTING'
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-black text-white hover:bg-blue-700 active:bg-blue-800'}`}
-          >
-            {sessionStatus === 'CONNECTING' ? (
-              <>
-                <svg className="animate-spin h-5 w-5 mr-2 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                </svg>
-                Connecting...
-              </>
-            ) : (
-              'Connect'
-            )}
-          </button>
+          <>
+            <div className="flex items-center gap-4 mb-3">
+              <button
+                onClick={sessionStatus === 'CONNECTING' ? undefined : onConnectClick}
+                disabled={sessionStatus === 'CONNECTING'}
+                className={`px-6 py-2 rounded-lg font-semibold flex items-center justify-center transition-colors
+                  ${sessionStatus === 'CONNECTING'
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-black text-white hover:bg-blue-700 active:bg-blue-800'}`}
+              >
+                {sessionStatus === 'CONNECTING' ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 mr-2 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    Connecting...
+                  </>
+                ) : (
+                  'Connect'
+                )}
+              </button>
+              <div className="flex items-center gap-2">
+                <input
+                  id="audio-playback-transcript"
+                  type="checkbox"
+                  checked={isAudioPlaybackEnabled}
+                  onChange={(e) => setIsAudioPlaybackEnabled(e.target.checked)}
+                  className="w-5 h-5"
+                />
+                <label htmlFor="audio-playback-transcript" className="text-base cursor-pointer font-medium">
+                  Audio playback
+                </label>
+              </div>
+            </div>
+          </>
         ) : (
           <>
-            <input
-              ref={inputRef}
-              type="text"
-              value={userText}
-              onChange={(e) => setUserText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && canSend) {
-                  onSendMessage();
-                }
-              }}
-              className="flex-1 px-4 py-2 focus:outline-none"
-              placeholder="Type a message..."
-            />
-            <button
-              onClick={onSendMessage}
-              disabled={!canSend || !userText.trim()}
-              className="bg-gray-900 text-white rounded-full px-2 py-2 disabled:opacity-50"
-            >
-              <Image src="arrow.svg" alt="Send" width={24} height={24} />
-            </button>
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                id="audio-playback-connected"
+                type="checkbox"
+                checked={isAudioPlaybackEnabled}
+                onChange={(e) => setIsAudioPlaybackEnabled(e.target.checked)}
+                className="w-5 h-5"
+              />
+              <label htmlFor="audio-playback-connected" className="text-base cursor-pointer font-medium">
+                Audio playback
+              </label>
+            </div>
+            <div className="flex w-full items-center gap-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={userText}
+                onChange={(e) => setUserText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && canSend) {
+                    onSendMessage();
+                  }
+                }}
+                className="flex-1 px-4 py-2 focus:outline-none border rounded-lg"
+                placeholder="Type a message..."
+              />
+              <button
+                onClick={onSendMessage}
+                disabled={!canSend || !userText.trim()}
+                className="bg-gray-900 text-white rounded-full px-2 py-2 disabled:opacity-50"
+              >
+                <Image src="arrow.svg" alt="Send" width={24} height={24} />
+              </button>
+            </div>
           </>
         )}
       </div>

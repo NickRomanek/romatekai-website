@@ -89,7 +89,7 @@ function App() {
   const [userText, setUserText] = useState<string>("");
   const [isPTTActive, setIsPTTActive] = useState<boolean>(false);
   const [isPTTUserSpeaking, setIsPTTUserSpeaking] = useState<boolean>(false);
-  const [isAudioPlaybackEnabled, setIsAudioPlaybackEnabled] = useState<boolean>(false);
+  const [isAudioPlaybackEnabled, setIsAudioPlaybackEnabled] = useState<boolean>(true);
 
   // Initialize the recording hook.
   const { startRecording, stopRecording, downloadRecording } =
@@ -650,6 +650,8 @@ function App() {
     );
     if (storedAudioPlaybackEnabled) {
       setIsAudioPlaybackEnabled(storedAudioPlaybackEnabled === "true");
+    } else {
+      setIsAudioPlaybackEnabled(true); // Default to true
     }
   }, []);
 
@@ -1052,6 +1054,8 @@ function App() {
           }
                 sessionStatus={sessionStatus}
                 onConnectClick={connectToRealtime}
+                isAudioPlaybackEnabled={isAudioPlaybackEnabled}
+                setIsAudioPlaybackEnabled={setIsAudioPlaybackEnabled}
         />
       </div>
           </div>
