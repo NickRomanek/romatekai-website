@@ -9,7 +9,7 @@ export const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user }) {
+    async signIn({ user }: { user: any }) {
       if (!user.email) {
         return false;
       }
