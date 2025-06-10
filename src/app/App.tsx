@@ -858,7 +858,15 @@ function App() {
         <div className="flex flex-col items-center justify-center mb-10">
           <ThreeSphere />
           <div className="flex gap-4 mt-8">
-            <button className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition">Get Started Today</button>
+            <button 
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold shadow hover:bg-blue-700 transition"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              Get Started Today
+            </button>
             <button
               className="border-2 border-blue-600 text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition"
               onClick={() => {
