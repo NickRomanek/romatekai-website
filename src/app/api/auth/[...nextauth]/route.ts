@@ -1,5 +1,6 @@
 import NextAuth, { type AuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { Account, User as NextAuthUser, Profile } from "next-auth"; // Import necessary types
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -9,12 +10,22 @@ export const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user }) {
+    async signIn({
+      user,
+      account,
+      profile,
+    }: {
+      user: NextAuthUser; // Use NextAuthUser type for 'user'
+      account: Account | null;
+      profile?: Profile;
+    }) {
       if (!user.email) {
         return false;
       }
       // Allow both admin@romatekai.com and nromanek33@gmail.com
-      return ["admin@romatekai.com", "nromanek33@gmail.com"].includes(user.email);
+      return ["admin@romatekai.com", "nromanek33@gmail.com"].includes(
+        user.email
+      );
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
