@@ -1,8 +1,7 @@
-import NextAuth from "next-auth";
+import NextAuth, { AuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import type { User } from "next-auth";
 
-export const authOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -10,7 +9,7 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user }: { user: User }) {
+    async signIn({ user }) {
       // Allow both admin@romatekai.com and nromanek33@gmail.com
       return ["admin@romatekai.com", "nromanek33@gmail.com"].includes(user.email || "");
     },
