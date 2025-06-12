@@ -825,7 +825,7 @@ function App() {
               </span>
               {/* Nav Links */}
               <nav className="hidden md:flex space-x-6 text-base font-medium">
-                {/* <a href="/about" className="hover:text-blue-600">About</a> */}
+                <a href="/azure-ai-consulting" className="hover:text-blue-600">Azure AI Consulting</a>
                 <a href="/blog" className="hover:text-blue-600">Blog</a>
                 <a href="#contact" className="hover:text-blue-600" onClick={e => { e.preventDefault(); document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}>Contact Us</a>
               </nav>
@@ -1050,6 +1050,14 @@ function App() {
             >
               ×
             </button>
+            
+            {/* Demo disclaimer */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-center">
+              <p className="text-sm text-blue-700">
+                <strong>Demo AI Assistant</strong> - Try asking "What services do you offer?" or any questions about RomaTek AI Solutions.
+              </p>
+            </div>
+            
             <div className="flex-1 flex flex-col min-h-0">
         <Transcript
           userText={userText}
