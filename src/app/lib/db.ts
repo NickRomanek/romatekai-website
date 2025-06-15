@@ -13,6 +13,7 @@ export const db = drizzle(sql);
 export const blogPosts = pgTable('blog_posts', {
   id: serial('id').primaryKey(),
   title: varchar('title', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 100 }).notNull().unique(),
   body: text('body').notNull(),
   image_url: text('image_url'),
   created_at: timestamp('created_at').defaultNow().notNull(),

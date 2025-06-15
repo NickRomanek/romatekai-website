@@ -34,10 +34,10 @@ export async function GET() {
 // POST - Create a new blog post with tags
 export async function POST(request: NextRequest) {
   try {
-    const { title, body, image_url, tags: tagNames } = await request.json();
+    const { title, slug, body, image_url, tags: tagNames } = await request.json();
     
-    if (!title || !body) {
-      return NextResponse.json({ error: 'Title and body are required' }, { status: 400 });
+    if (!title || !body || !slug) {
+      return NextResponse.json({ error: 'Title, slug, and body are required' }, { status: 400 });
     }
 
     // Start a transaction
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       // Create the blog post
       const [newPost] = await tx.insert(blogPosts).values({
         title,
+        slug,
         body,
         image_url: image_url || null,
       }).returning();

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 
 export default function AIAdminPage() {
   const [title, setTitle] = useState('');
+  const [slug, setSlug] = useState('');
   const [body, setBody] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [tags, setTags] = useState<string>('');
@@ -56,6 +57,15 @@ export default function AIAdminPage() {
     fetchPosts();
   }, []);
 
+  // Utility to generate a slug from the title
+  function generateSlug(str: string) {
+    return str
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '')
+      .substring(0, 100);
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -88,6 +98,9 @@ export default function AIAdminPage() {
         .map(tag => tag.trim())
         .filter(tag => tag.length > 0);
 
+      // Use provided slug or auto-generate from title
+      const finalSlug = slug.trim() ? slug.trim() : generateSlug(title);
+
       // Create blog post
       const response = await fetch('/api/blog', {
         method: 'POST',
@@ -96,6 +109,7 @@ export default function AIAdminPage() {
         },
         body: JSON.stringify({
           title,
+          slug: finalSlug,
           body,
           image_url: imageUrl,
           tags: tagArray,
@@ -108,6 +122,7 @@ export default function AIAdminPage() {
 
       setMessage('Blog post created successfully!');
       setTitle('');
+      setSlug('');
       setBody('');
       setImage(null);
       setTags('');
@@ -207,11 +222,30 @@ Let me know if you see any formatting issues!`);
                 type="text"
                 id="title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={e => {
+                  setTitle(e.target.value);
+                  if (!slug) setSlug(generateSlug(e.target.value));
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 font-medium"
                 placeholder="Enter blog post title"
                 required
               />
+            </div>
+            
+            <div>
+              <label htmlFor="slug" className="block text-sm font-semibold text-gray-900 mb-1">
+                Slug (URL-friendly, e.g. ai-assisted-web-development)
+              </label>
+              <input
+                type="text"
+                id="slug"
+                value={slug}
+                onChange={e => setSlug(generateSlug(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 font-medium"
+                placeholder="e.g. ai-assisted-web-development"
+                maxLength={100}
+              />
+              <p className="text-sm text-gray-600 mt-1">Leave blank to auto-generate from title. Must be unique.</p>
             </div>
             
             <div>
