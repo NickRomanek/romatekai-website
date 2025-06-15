@@ -125,6 +125,51 @@ export default function AIAdminPage() {
     }
   };
 
+  const loadTestPost = () => {
+    setTitle("Test Post with Rich Formatting");
+    setBody(`# Welcome to the Test Post
+
+This is a test post to verify rich formatting works correctly.
+
+## Features We're Testing
+
+Here's what we're testing:
+- **Bold text** and *italic text*
+- [Links](https://romatekai.com)
+- Lists (both ordered and unordered)
+- Blockquotes
+- And more!
+
+### Code Example
+\`\`\`javascript
+console.log("Hello, World!");
+\`\`\`
+
+> This is a blockquote. It should be properly styled and indented.
+
+#### Ordered List
+1. First item
+2. Second item
+3. Third item
+
+#### Unordered List
+* Item one
+* Item two
+* Item three
+
+### Final Thoughts
+This post should demonstrate all the rich formatting capabilities of our blog system. If everything is working correctly, you should see:
+
+1. Properly styled headers
+2. Formatted lists
+3. Styled blockquotes
+4. Bold and italic text
+5. Code blocks
+6. Links
+
+Let me know if you see any formatting issues!`);
+  };
+
   // Just show the admin interface directly for now
 
   return (
@@ -137,7 +182,15 @@ export default function AIAdminPage() {
         
         {/* Create Blog Post Section */}
         <div className="bg-white rounded-xl shadow p-6 text-left mb-10">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">Create New Blog Post</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Create New Blog Post</h2>
+            <button
+              onClick={loadTestPost}
+              className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition"
+            >
+              Load Test Post
+            </button>
+          </div>
           
           {message && (
             <div className={`mb-4 p-3 rounded-lg ${message.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>

@@ -25,6 +25,13 @@ export default function BlogPage() {
     fetchPosts();
   }, []);
 
+  // Modal close handler for overlay click
+  function handleOverlayClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    if (e.target === e.currentTarget) {
+      setExpandedPost(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-0 px-0">
       {/* Header/Menu Bar */}
@@ -51,55 +58,48 @@ export default function BlogPage() {
             <p className="text-gray-600">No blog posts yet. Check back soon!</p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {posts.map((post: any) => (
               <article 
                 key={post.id} 
-                className="bg-white rounded-xl shadow p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                className="bg-white rounded-xl shadow p-4 flex gap-4 items-start cursor-pointer hover:shadow-lg transition-shadow max-h-40 overflow-hidden"
                 onClick={() => setExpandedPost(post)}
+                style={{ minHeight: '120px' }}
               >
-                <div className="flex flex-col md:flex-row gap-6">
-                  {post.image_url && (
-                    <div className="md:w-1/3 flex-shrink-0">
-                      <img 
-                        src={post.image_url} 
-                        alt={post.title}
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
+                {post.image_url && (
+                  <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                    <img 
+                      src={post.image_url} 
+                      alt={post.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-bold mb-1 text-gray-900 break-words line-clamp-2">{post.title}</h2>
+                  <div className="text-gray-500 mb-1 text-xs">
+                    {new Date(post.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </div>
+                  {post.tags && post.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-1">
+                      {post.tags.map((tag: any) => (
+                        <span
+                          key={tag.id}
+                          className="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded"
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
                     </div>
                   )}
-                  <div className={`${post.image_url ? "md:w-2/3" : "w-full"} min-w-0`}>
-                    <h2 className="text-2xl font-bold mb-3 text-gray-900 break-words">{post.title}</h2>
-                    <div className="text-gray-600 mb-4 text-sm">
-                      {new Date(post.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </div>
-                    {post.tags && post.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {post.tags.map((tag: any) => (
-                          <span
-                            key={tag.id}
-                            className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                          >
-                            {tag.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <div className="text-gray-700 leading-relaxed">
-                      {post.body.split('\n').slice(0, 3).map((paragraph: string, index: number) => (
-                        <p key={index} className="mb-4 last:mb-0 break-words overflow-hidden">
-                          {paragraph.length > 200 ? `${paragraph.substring(0, 200)}...` : paragraph}
-                        </p>
-                      ))}
-                      {post.body.split('\n').length > 3 && (
-                        <p className="text-blue-600 font-semibold">Click to read more...</p>
-                      )}
-                    </div>
-                  </div>
+                  <div
+                    className="text-gray-700 text-sm leading-snug max-h-10 overflow-hidden"
+                    dangerouslySetInnerHTML={{ __html: post.body.length > 180 ? post.body.slice(0, 180) + '...' : post.body.split('\n').slice(0, 2).join(' ') }}
+                  />
                 </div>
               </article>
             ))}
@@ -109,28 +109,34 @@ export default function BlogPage() {
 
       {/* Modal for expanded post */}
       {expandedPost && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={handleOverlayClick}
+        >
           <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
             <button
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center"
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl font-bold z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center border border-gray-200"
               onClick={() => setExpandedPost(null)}
+              aria-label="Close"
+              tabIndex={0}
             >
               ×
             </button>
             <div className="p-8">
-              <div className="flex flex-col lg:flex-row gap-8">
+              {/* Top row: image, title, date, tags */}
+              <div className="flex flex-row gap-8 items-start mb-8">
                 {expandedPost.image_url && (
-                  <div className="lg:w-1/3 flex-shrink-0">
-                    <img 
-                      src={expandedPost.image_url} 
+                  <div className="w-40 h-40 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                    <img
+                      src={expandedPost.image_url}
                       alt={expandedPost.title}
-                      className="w-full h-64 lg:h-80 object-cover rounded-lg"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                 )}
-                <div className={`${expandedPost.image_url ? "lg:w-2/3" : "w-full"} min-w-0`}>
-                  <h1 className="text-3xl font-bold mb-4 text-gray-900 break-words">{expandedPost.title}</h1>
-                  <div className="text-gray-600 mb-6 text-sm">
+                <div className="flex-1 min-w-0 flex flex-col gap-2 justify-center">
+                  <h1 className="text-3xl font-bold text-gray-900 break-words mb-1">{expandedPost.title}</h1>
+                  <div className="text-gray-600 text-sm mb-1">
                     {new Date(expandedPost.created_at).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
@@ -138,7 +144,7 @@ export default function BlogPage() {
                     })}
                   </div>
                   {expandedPost.tags && expandedPost.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-6">
+                    <div className="flex flex-wrap gap-2 mb-1">
                       {expandedPost.tags.map((tag: any) => (
                         <span
                           key={tag.id}
@@ -149,15 +155,13 @@ export default function BlogPage() {
                       ))}
                     </div>
                   )}
-                  <div className="text-gray-700 leading-relaxed space-y-4">
-                    {expandedPost.body.split('\n').map((paragraph: string, index: number) => (
-                      <p key={index} className="break-words overflow-wrap-anywhere">
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
                 </div>
               </div>
+              {/* Body/content full width */}
+              <div
+                className="text-gray-700 leading-relaxed prose max-w-none text-[0.95rem]"
+                dangerouslySetInnerHTML={{ __html: expandedPost.body }}
+              />
             </div>
           </div>
         </div>
