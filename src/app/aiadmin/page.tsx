@@ -6,6 +6,7 @@ export default function AIAdminPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [image, setImage] = useState<File | null>(null);
+  const [tags, setTags] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [posts, setPosts] = useState<any[]>([]);
@@ -81,6 +82,12 @@ export default function AIAdminPage() {
         imageUrl = uploadData.imageUrl;
       }
 
+      // Process tags
+      const tagArray = tags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
+
       // Create blog post
       const response = await fetch('/api/blog', {
         method: 'POST',
@@ -91,6 +98,7 @@ export default function AIAdminPage() {
           title,
           body,
           image_url: imageUrl,
+          tags: tagArray,
         }),
       });
 
@@ -102,6 +110,7 @@ export default function AIAdminPage() {
       setTitle('');
       setBody('');
       setImage(null);
+      setTags('');
       // Reset file input
       const fileInput = document.getElementById('image') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
@@ -167,6 +176,21 @@ export default function AIAdminPage() {
             </div>
             
             <div>
+              <label htmlFor="tags" className="block text-sm font-semibold text-gray-900 mb-1">
+                Tags (comma-separated)
+              </label>
+              <input
+                type="text"
+                id="tags"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 font-medium"
+                placeholder="e.g., AI, Technology, Machine Learning"
+              />
+              <p className="text-sm text-gray-600 mt-1">Separate multiple tags with commas</p>
+            </div>
+            
+            <div>
               <label htmlFor="body" className="block text-sm font-semibold text-gray-900 mb-1">
                 Content
               </label>
@@ -226,6 +250,18 @@ export default function AIAdminPage() {
                               day: 'numeric',
                             })}
                           </p>
+                          {post.tags && post.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {post.tags.map((tag: any) => (
+                                <span
+                                  key={tag.id}
+                                  className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                                >
+                                  {tag.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           <p className="text-gray-700 text-sm break-words">
                             {post.body.length > 150 ? `${post.body.substring(0, 150)}...` : post.body}
                           </p>

@@ -77,6 +77,18 @@ export default function BlogPage() {
                         day: 'numeric',
                       })}
                     </div>
+                    {post.tags && post.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {post.tags.map((tag: any) => (
+                          <span
+                            key={tag.id}
+                            className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <div className="text-gray-700 leading-relaxed">
                       {post.body.split('\n').slice(0, 3).map((paragraph: string, index: number) => (
                         <p key={index} className="mb-4 last:mb-0 break-words overflow-hidden">
@@ -125,6 +137,18 @@ export default function BlogPage() {
                       day: 'numeric',
                     })}
                   </div>
+                  {expandedPost.tags && expandedPost.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {expandedPost.tags.map((tag: any) => (
+                        <span
+                          key={tag.id}
+                          className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded"
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="text-gray-700 leading-relaxed space-y-4">
                     {expandedPost.body.split('\n').map((paragraph: string, index: number) => (
                       <p key={index} className="break-words overflow-wrap-anywhere">
